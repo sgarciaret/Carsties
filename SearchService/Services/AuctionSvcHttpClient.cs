@@ -1,5 +1,4 @@
 ﻿using MongoDB.Entities;
-using SearchService.Models;
 
 namespace SearchService.Services
 {
@@ -14,14 +13,19 @@ namespace SearchService.Services
             _config = config;
         }
 
-        public async Task<List<Item>> GetItemsSearchDb()
+        public async Task<List<Models.Item>> GetItemsSearchDb()
         {
-            var lastUpdated = await DB.Find<Item, string>()
-                .Sort(x => x.Descending(a => a.UpdatedAt))
+            var lastUpdated = await DB.Find<Models.Item, string>()
+                .Sort(x => x.Descending(x => x.UpdatedAt))
                 .Project(x => x.UpdatedAt.ToString())
                 .ExecuteFirstAsync();
 
-            return await _httpClient.GetFromJsonAsync<List<Item>>(_config["AuctionServiceUrl"] + "/api/auctions?date=" + lastUpdated);
+            if (string.IsNullOrEmpty(lastUpdated))
+            {
+                lastUpdated = DateTime.MinValue.ToString();
+            }
+
+            return await _httpClient.GetFromJsonAsync<List<Models.Item>>(_config["AuctionServiceUrl"] + "/api/auctions?date=" + DateTime.MinValue.ToString());
         }
     }
 }

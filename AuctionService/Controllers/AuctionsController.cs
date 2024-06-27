@@ -8,6 +8,7 @@ using MassTransit;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Diagnostics.CodeAnalysis;
 
 namespace AuctionService.Controllers
 {
@@ -27,11 +28,16 @@ namespace AuctionService.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<List<AuctionDto>>> GetAllAuctions(string date)
+        public async Task<ActionResult<List<AuctionDto>>> GetAllAuctions([AllowNull]string date)
         {
             var query = _context.Auctions.OrderBy(x => x.Item.Make).AsQueryable();
+
+            if (date == null)
+            {
+                date = DateTime.MinValue.ToString();
+            }
             
-            if (string.IsNullOrWhiteSpace(date))
+            if (!string.IsNullOrWhiteSpace(date))
             {
                 query = query.Where(x => x.UpdatedAt.CompareTo(DateTime.Parse(date).ToUniversalTime()) > 0);
             }
