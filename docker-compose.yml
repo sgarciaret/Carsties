@@ -13,7 +13,7 @@ services:
       - MONGO_INITDB_ROOT_USERNAME=root
       - MONGO_INITDB_ROOT_PASSWORD=mongopw
     ports:
-      - 27017:27017
+      - 27018:27017
     volumes:
       - /var/lib/mongodb/data
   rabbitmq:
@@ -34,11 +34,17 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:80
+      - ASPNETCORE_URLS=http://+:7777
       - RabbitMq__Host=rabbitmq
       - ConnectionStrings__DefaultConnection=Server=postgres:5432;User Id=postgres;Password=postgrespw;Database=auctions
       - IdentityServiceUrl=http://identity-svc
+      - Kestrel__Endpoints_Grpc_Protocols=Http2
+      - Kestrel__Endpoints_Grpc_Url=Http://+:7777
+      - Kestrel__Endpoints_WebApi_Protocols=Http1
+      - Kestrel__Endpoints_WebApi_Url=Http://+:80
     ports:
       - 7001:80
+      - 7777:7777
     depends_on:
       postgres:
         condition: service_started
@@ -88,3 +94,22 @@ services:
       - ASPNETCORE_URLS=http://+:80
     ports:
       - 6001:80
+  bid-svc:
+    image: sergiogrs/search-svc:latest
+    build:
+      context: .
+      dockerfile: BiddingService/Dockerfile
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:80
+      - RabbitMq__Host=rabbitmq
+      - ConnectionStrings__BidDbConnection=mongodb://root:mongopw@mongodb
+      - IdentityServiceUrl=http://identity-svc
+      - GrpcAuction=http://auction-svc:7777
+    ports:
+      - 7003:80
+    depends_on:
+      mongodb:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
